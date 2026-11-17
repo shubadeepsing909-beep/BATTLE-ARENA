@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BATTLE ARENA — Admin Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-page: #F4F7FB;
+      --bg-card: #FFFFFF;
+      --bg-subtle: #EFF6FF;
+      --border-color: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --accent: #2563EB;
+      --accent-hover: #1D4ED8;
+      --accent-soft: #DBEAFE;
+      --accent-text: #1E40AF;
+      --sidebar-bg: #FFFFFF;
+      --sidebar-active-bg: #EFF6FF;
+      --sidebar-active-text: #1D4ED8;
+    }
+    html[data-theme="black-gold"] {
+      --bg-page: #080808;
+      --bg-card: #151515;
+      --bg-subtle: #1F1B12;
+      --border-color: #2A2416;
+      --text-main: #FFFFFF;
+      --text-muted: #A0A0A0;
+      --accent: #D4AF37;
+      --accent-hover: #FFD700;
+      --accent-soft: rgba(212, 175, 55, 0.16);
+      --accent-text: #FFD700;
+      --sidebar-bg: #101010;
+      --sidebar-active-bg: rgba(212, 175, 55, 0.14);
+      --sidebar-active-text: #FFD700;
+    }
+    body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg-page); color: var(--text-main); transition: background-color 0.2s ease, color 0.2s ease; }
+    .font-display { font-family: 'Rajdhani', sans-serif; }
+    .surface-card { background-color: var(--bg-card); border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04); }
+    .btn-primary { background-color: var(--accent); color: #FFFFFF; transition: all 0.15s ease; }
+    html[data-theme="black-gold"] .btn-primary { color: #080808; font-weight: 700; }
+    .btn-primary:hover { background-color: var(--accent-hover); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .input-field { background-color: var(--bg-page); border: 1px solid var(--border-color); color: var(--text-main); }
+    .input-field:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .nav-item.active { background-color: var(--sidebar-active-bg); color: var(--sidebar-active-text); font-weight: 600; }
+    .muted { color: var(--text-muted); }
+    .accent-text { color: var(--accent-text); }
+    .accent-bg-soft { background-color: var(--accent-soft); color: var(--accent-text); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 9999px; }
+  </style>
+</head>
+<body class="min-h-screen antialiased">
+
+  <div id="toast-container" class="fixed top-4 right-4 z-[70] flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <div id="global-loader" class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm">
+    <div class="surface-card rounded-2xl p-6 flex flex-col items-center gap-3 shadow-xl">
+      <div class="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+      <p class="text-sm font-semibold">Connecting to Battle Arena...</p>
+    </div>
+  </div>
+
+  <!-- LOGIN SCREEN -->
+  <section id="login-screen" class="hidden min-h-screen flex items-center justify-center p-4">
+    <div class="surface-card w-full max-w-md rounded-2xl p-8 shadow-xl">
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl btn-primary flex items-center justify-center font-display text-xl font-bold shadow">BA</div>
+          <div>
+            <h1 class="font-display text-2xl font-bold tracking-wide leading-none">BATTLE ARENA</h1>
+            <p class="text-xs muted mt-1">Admin Control Panel</p>
+          </div>
+        </div>
+        <button id="login-theme-toggle" type="button" class="text-xs px-3 py-1.5 rounded-lg border muted" style="border-color: var(--border-color);">Theme</button>
+      </div>
+
+      <div id="file-protocol-warning" class="hidden mb-4 p-3 rounded-xl text-xs bg-amber-500/10 border border-amber-500/30 text-amber-600">
+        Firebase Auth requires <code>http://</code> or <code>https://</code> (open via Cloudflare Pages, Netlify, or Acode Live Server, not <code>file://</code>).
+      </div>
+      <div id="login-alert" class="hidden mb-4 p-3 rounded-xl text-xs font-medium bg-red-500/10 border border-red-500/30 text-red-500"></div>
+
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider muted mb-1.5">Admin Gmail</label>
+          <input id="login-email" type="email" required value="shubadeepsing909@gmail.com" class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider muted mb-1.5">Password</label>
+          <div class="relative">
+            <input id="login-password" type="password" required placeholder="Enter Firebase password" class="input-field w-full px-3.5 py-2.5 pr-16 rounded-xl text-sm" />
+            <button id="toggle-pass-btn" type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold accent-text">Show</button>
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="muted">Authorized Admin UID Required</span>
+          <button id="forgot-password-btn" type="button" class="accent-text font-semibold hover:underline">Forgot Password?</button>
+        </div>
+        <button id="login-submit-btn" type="submit" class="btn-primary w-full py-3 rounded-xl font-semibold text-sm shadow-md">Login to Admin Panel</button>
+      </form>
+
+      <div id="bootstrap-box" class="hidden mt-5 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs space-y-2">
+        <p class="font-semibold text-amber-600">First-Time Superadmin Setup</p>
+        <p class="muted">Signed in with Superadmin UID (<code>kOXOAgPVKudCdefAI8x22hD32TQ2</code>). Tap below to activate your admin record:</p>
+        <button id="bootstrap-admin-btn" type="button" class="w-full py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold">Initialize Superadmin Profile Now</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN ADMIN PANEL -->
+  <div id="admin-shell" class="hidden min-h-screen flex">
+    <div id="mobile-backdrop" class="hidden fixed inset-0 bg-slate-950/50 z-30 lg:hidden"></div>
+
+    <aside id="sidebar" style="background-color: var(--sidebar-bg); border-color: var(--border-color);"
+      class="fixed lg:sticky top-0 left-0 z-40 h-screen w-64 border-r flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200">
+      <div class="p-5 border-b flex items-center justify-between" style="border-color: var(--border-color);">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl btn-primary flex items-center justify-center font-display text-lg font-bold">BA</div>
+          <div><h2 class="font-display text-xl font-bold tracking-wide leading-none">BATTLE ARENA</h2><span class="text-[11px] font-semibold accent-text uppercase tracking-wider">Admin Panel</span></div>
+        </div>
+        <button id="close-sidebar-btn" class="lg:hidden muted text-xl">&times;</button>
+      </div>
+
+      <nav id="sidebar-nav" class="flex-1 overflow-y-auto p-3 space-y-1 text-sm">
+        <button data-tab="dashboard" class="nav-item active w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-left"><span>📊</span><span>Dashboard</span></button>
+        <button data-tab="tournaments" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-left"><span>🏆</span><span>Tournaments</span></button>
+        <button data-tab="users" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-left"><span>👥</span><span>Users & Wallets</span></button>
+        <button data-tab="deposits" class="nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left">
+          <span class="flex items-center gap-3"><span>💳</span><span>Deposits</span></span>
+          <span id="badge-deposits" class="hidden px-2 py-0.5 text-[11px] rounded-full bg-amber-500 text-white font-bold">0</span>
+        </button>
+        <button data-tab="withdrawals" class="nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left">
+          <span class="flex items-center gap-3"><span>🏦</span><span>Withdrawals</span></span>
+          <span id="badge-withdrawals" class="hidden px-2 py-0.5 text-[11px] rounded-full bg-red-500 text-white font-bold">0</span>
+        </button>
+        <button data-tab="winners" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-left"><span>🥇</span><span>Winners & Prizes</span></button>
+        <button data-tab="notifications" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-left"><span>🔔</span><span>Notifications</span></button>
+        <button data-tab="support" class="nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left">
+          <span class="flex items-center gap-3"><span>🎧</span><span>Support</span></span>
+          <span id="badge-support" class="hidden px-2 py-0.5 text-[11px] rounded-full bg-blue-600 text-white font-bold">0</span>
+        </button>
+        <button data-tab="settings" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-left"><span>⚙️</span><span>Payment & Settings</span></button>
+        <button data-tab="admins" class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-left"><span>🛡️</span><span>Admins & Audit Logs</span></button>
+      </nav>
+
+      <div class="p-4 border-t space-y-2" style="border-color: var(--border-color);">
+        <div class="text-xs">
+          <p id="admin-email-display" class="font-semibold truncate"></p>
+          <p id="admin-role-display" class="muted uppercase text-[10px] tracking-wider"></p>
+        </div>
+        <button id="logout-btn" class="w-full py-2 rounded-xl text-xs font-semibold border border-red-500/30 text-red-500 hover:bg-red-500/10">Logout</button>
+      </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col min-w-0">
+      <header style="background-color: var(--bg-card); border-color: var(--border-color);" class="sticky top-0 z-20 border-b px-4 lg:px-8 py-3.5 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <button id="open-sidebar-btn" class="lg:hidden p-2 rounded-lg border" style="border-color: var(--border-color);">☰</button>
+          <div>
+            <h1 id="page-title" class="font-display text-xl lg:text-2xl font-bold leading-tight">Dashboard</h1>
+            <p class="text-[11px] text-emerald-500 font-medium flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> Connected: battle-arena-c069c</p>
+          </div>
+        </div>
+        <button id="theme-toggle-btn" class="px-3 py-2 rounded-xl text-xs font-semibold border hover:opacity-80" style="border-color: var(--border-color);">🎨 Theme: White + Blue</button>
+      </header>
+
+      <main class="flex-1 p-4 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+        <section id="tab-dashboard" class="tab-panel space-y-6">
+          <div id="kpi-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="surface-card rounded-2xl p-5">
+              <div class="flex items-center justify-between mb-4"><h3 class="font-bold text-base">Pending Deposits</h3><button data-goto="deposits" class="text-xs font-semibold accent-text hover:underline">View All</button></div>
+              <div id="dash-pending-deposits" class="space-y-2.5 text-sm"></div>
+            </div>
+            <div class="surface-card rounded-2xl p-5">
+              <div class="flex items-center justify-between mb-4"><h3 class="font-bold text-base">Pending Withdrawals</h3><button data-goto="withdrawals" class="text-xs font-semibold accent-text hover:underline">View All</button></div>
+              <div id="dash-pending-withdrawals" class="space-y-2.5 text-sm"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="tab-tournaments" class="tab-panel hidden space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-2">
+              <input id="tournament-search" type="text" placeholder="Search title or map..." class="input-field px-3.5 py-2 rounded-xl text-sm w-60" />
+              <select id="tournament-filter" class="input-field px-3 py-2 rounded-xl text-sm">
+                <option value="all">All Statuses</option><option value="upcoming">Upcoming</option><option value="live">Live</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            <button id="create-tournament-btn" class="btn-primary px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm">+ Create Tournament</button>
+          </div>
+          <div id="tournaments-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+        </section>
+
+        <section id="tab-users" class="tab-panel hidden space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <input id="user-search" type="text" placeholder="Search name, email, phone, or Free Fire UID..." class="input-field px-3.5 py-2 rounded-xl text-sm w-full sm:w-80" />
+            <span id="users-count-label" class="text-xs font-semibold muted"></span>
+          </div>
+          <div class="surface-card rounded-2xl overflow-x-auto">
+            <table class="w-full text-sm text-left">
+              <thead class="text-xs uppercase muted border-b" style="border-color: var(--border-color);">
+                <tr><th class="px-4 py-3">Player</th><th class="px-4 py-3">Free Fire UID</th><th class="px-4 py-3">Contact</th><th class="px-4 py-3">Wallet</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 text-right">Actions</th></tr>
+              </thead>
+              <tbody id="users-tbody" class="divide-y" style="border-color: var(--border-color);"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="tab-deposits" class="tab-panel hidden space-y-5">
+          <div class="surface-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="text-xs space-y-1">
+              <p class="font-bold">Configured Deposit Gateways:</p>
+              <p class="muted">₹50: <span class="accent-text font-semibold">Rupayex</span> • ₹100 / ₹200 / ₹500: <span class="accent-text font-semibold">LG-Pay</span></p>
+            </div>
+            <select id="deposit-filter" class="input-field px-3 py-2 rounded-xl text-sm">
+              <option value="all">All Deposits</option><option value="pending" selected>Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <div class="surface-card rounded-2xl overflow-x-auto">
+            <table class="w-full text-sm text-left">
+              <thead class="text-xs uppercase muted border-b" style="border-color: var(--border-color);">
+                <tr><th class="px-4 py-3">Date</th><th class="px-4 py-3">Player</th><th class="px-4 py-3">Amount</th><th class="px-4 py-3">Gateway & UTR</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 text-right">Action</th></tr>
+              </thead>
+              <tbody id="deposits-tbody" class="divide-y" style="border-color: var(--border-color);"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="tab-withdrawals" class="tab-panel hidden space-y-5">
+          <div class="flex justify-end">
+            <select id="withdrawal-filter" class="input-field px-3 py-2 rounded-xl text-sm">
+              <option value="all">All Withdrawals</option><option value="pending" selected>Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <div class="surface-card rounded-2xl overflow-x-auto">
+            <table class="w-full text-sm text-left">
+              <thead class="text-xs uppercase muted border-b" style="border-color: var(--border-color);">
+                <tr><th class="px-4 py-3">Date</th><th class="px-4 py-3">Player</th><th class="px-4 py-3">Amount</th><th class="px-4 py-3">UPI / Bank Details</th><th class="px-4 py-3">Payout Ref</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 text-right">Action</th></tr>
+              </thead>
+              <tbody id="withdrawals-tbody" class="divide-y" style="border-color: var(--border-color);"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="tab-winners" class="tab-panel hidden space-y-6">
+          <div class="surface-card rounded-2xl p-6 space-y-4">
+            <h3 class="font-bold text-base">Select Winner & Allocate Prize</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><label class="block text-xs font-semibold muted mb-1">Tournament</label><select id="winner-tournament-select" class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm"></select></div>
+              <div><label class="block text-xs font-semibold muted mb-1">Registered Player</label><select id="winner-player-select" class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm"></select></div>
+              <div><label class="block text-xs font-semibold muted mb-1">Rank / Position</label><input id="winner-rank" type="number" min="1" value="1" class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm" /></div>
+              <div><label class="block text-xs font-semibold muted mb-1">Verified Kills</label><input id="winner-kills" type="number" min="0" value="0" class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm" /></div>
+              <div><label class="block text-xs font-semibold muted mb-1">Prize Amount (₹)</label><input id="winner-prize" type="number" min="0" value="0" class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm" /></div>
+              <div class="flex items-end"><button id="allocate-prize-btn" class="btn-primary w-full py-2.5 rounded-xl text-sm font-semibold">Verify Result & Credit Prize</button></div>
+            </div>
+          </div>
+          <div class="surface-card rounded-2xl p-5">
+            <h3 class="font-bold text-base mb-4">Prize Distribution History</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm text-left">
+                <thead class="text-xs uppercase muted border-b" style="border-color: var(--border-color);">
+                  <tr><th class="px-4 py-3">Date</th><th class="px-4 py-3">Tournament</th><th class="px-4 py-3">Winner</th><th class="px-4 py-3">Rank / Kills</th><th class="px-4 py-3">Prize</th></tr>
+                </thead>
+                <tbody id="winners-tbody" class="divide-y" style="border-color: var(--border-color);"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="tab-notifications" class="tab-panel hidden space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <form id="announcement-form" class="surface-card rounded-2xl p-6 space-y-4">
+              <h3 class="font-bold text-base">Tournament Announcement Banner</h3>
+              <textarea id="ann-text" rows="

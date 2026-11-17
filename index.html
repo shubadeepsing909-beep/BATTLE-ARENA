@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>BATTLE ARENA — Free Fire Esports Tournaments</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-page: #F4F7FB;
+      --bg-card: #FFFFFF;
+      --bg-subtle: #EFF6FF;
+      --border-color: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --accent: #2563EB;
+      --accent-hover: #1D4ED8;
+      --accent-soft: #DBEAFE;
+      --accent-text: #1E40AF;
+      --nav-bg: #FFFFFF;
+    }
+    html[data-theme="black-gold"] {
+      --bg-page: #080808;
+      --bg-card: #151515;
+      --bg-subtle: #1F1B12;
+      --border-color: #2A2416;
+      --text-main: #FFFFFF;
+      --text-muted: #A0A0A0;
+      --accent: #D4AF37;
+      --accent-hover: #FFD700;
+      --accent-soft: rgba(212, 175, 55, 0.16);
+      --accent-text: #FFD700;
+      --nav-bg: #101010;
+    }
+    body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg-page); color: var(--text-main); transition: background-color 0.2s ease, color 0.2s ease; }
+    .font-display { font-family: 'Rajdhani', sans-serif; }
+    .surface-card { background-color: var(--bg-card); border: 1px solid var(--border-color); box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04); }
+    .btn-primary { background-color: var(--accent); color: #FFFFFF; transition: all 0.15s ease; }
+    html[data-theme="black-gold"] .btn-primary { color: #080808; font-weight: 700; }
+    .btn-primary:hover { background-color: var(--accent-hover); }
+    .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+    .input-field { background-color: var(--bg-page); border: 1px solid var(--border-color); color: var(--text-main); }
+    .input-field:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .nav-link.active { background-color: var(--accent-soft); color: var(--accent-text); font-weight: 700; }
+    .bottom-nav-link.active { color: var(--accent); font-weight: 700; }
+    .muted { color: var(--text-muted); }
+    .accent-text { color: var(--accent-text); }
+    .accent-bg-soft { background-color: var(--accent-soft); color: var(--accent-text); }
+    @keyframes pulseGlow { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+    .live-dot { animation: pulseGlow 1.5s infinite; }
+  </style>
+</head>
+<body class="min-h-screen antialiased pb-20 lg:pb-0">
+
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <div id="global-loader" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm">
+    <div class="surface-card rounded-2xl p-6 flex flex-col items-center gap-3 shadow-xl">
+      <div class="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+      <p class="text-sm font-semibold">Loading Battle Arena...</p>
+    </div>
+  </div>
+
+  <!-- AUTH SCREEN -->
+  <section id="auth-screen" class="hidden min-h-screen flex items-center justify-center p-4">
+    <div class="surface-card w-full max-w-md rounded-2xl p-7 shadow-xl space-y-5">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl btn-primary flex items-center justify-center font-display text-xl font-bold shadow">BA</div>
+          <div>
+            <h1 class="font-display text-2xl font-bold tracking-wide leading-none">BATTLE ARENA</h1>
+            <p class="text-xs muted mt-1">Free Fire Esports Platform</p>
+          </div>
+        </div>
+        <button id="auth-theme-btn" type="button" class="text-xs px-3 py-1.5 rounded-lg border muted" style="border-color: var(--border-color);">Theme</button>
+      </div>
+
+      <div id="file-warning" class="hidden p-3 rounded-xl text-xs bg-amber-500/10 border border-amber-500/30 text-amber-600">
+        Firebase Auth requires <code>http://</code> or <code>https://</code>. Please open via Cloudflare Pages, Netlify, or Acode Live Server (not <code>file://</code>).
+      </div>
+      <div id="auth-alert" class="hidden p-3 rounded-xl text-xs font-medium bg-red-500/10 border border-red-500/30 text-red-500"></div>
+
+      <div class="grid grid-cols-3 gap-1 p-1 rounded-xl" style="background-color: var(--bg-page); border: 1px solid var(--border-color);">
+        <button type="button" data-auth-mode="login" class="auth-tab-btn py-2 rounded-lg text-xs font-semibold btn-primary">Email Login</button>
+        <button type="button" data-auth-mode="register" class="auth-tab-btn py-2 rounded-lg text-xs font-semibold muted">Register</button>
+        <button type="button" data-auth-mode="phone" class="auth-tab-btn py-2 rounded-lg text-xs font-semibold muted">Phone OTP</button>
+      </div>
+
+      <form id="email-login-form" class="space-y-3.5">
+        <div><label class="block text-xs font-semibold muted mb-1">Email</label><input id="login-email" type="email" required placeholder="player@example.com" class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm" /></div>
+        <div><label class="block text-xs font-semibold muted mb-1">Password</label><input id="login-password" type="password" required placeholder="••••••••" class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm" /></div>
+        <div class="flex justify-end"><button id="forgot-pass-btn" type="button" class="text-xs font-semibold accent-text hover:underline">Forgot Password?</button></div>
+        <button type="submit" class="btn-primary w-full py-3 rounded-xl text-sm font-semibold">Sign In</button>
+      </form>
+
+      <form id="register-form" class="hidden space-y-3">
+        <div><label class="block text-xs font-semibold muted mb-1">In-Game Name / Full Name</label><input id="reg-name" type="text" required placeholder="e.g. TOXIC_KING" class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm" /></div>
+        <div><label class="block text-xs font-semibold muted mb-1">Free Fire UID</label><input id="reg-ffuid" type="text" required pattern="[0-9]{6,15}" placeholder="e.g. 1928374650" class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm" /></div>
+        <div><label class="block text-xs font-semibold muted mb-1">Phone Number</label><input id="reg-phone" type="tel" required placeholder="+919876543210" class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm" /></div>
+        <div><label class="block text-xs font-semibold muted mb-1">Email</label><input id="reg-email" type="email" required placeholder="player@example.com" class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm" /></div>
+        <div><label class="block text-xs font-semibold muted mb-1">Password (min 6 chars)</label><input id="reg-password" type="password" minlength="6" required placeholder="Create strong password" class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm" /></div>
+        <button type="submit" class="btn-primary w-full py-3 rounded-xl text-sm font-semibold">Create Player Account</button>
+      </form>
+
+      <div id="phone-auth-box" class="hidden space-y-3">
+        <div><label class="block text-xs font-semibold muted mb-1">Mobile Number (with +91)</label><input id="otp-phone" type="tel" placeholder="+919876543210" class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm" /></div>
+        <div id="recaptcha-container"></div>
+        <button id="send-otp-btn" type="button" class="btn-primary w-full py-2.5 rounded-xl text-sm font-semibold">Send OTP</button>
+        <div id="otp-verify-group" class="hidden space-y-3 pt-2">
+          <input id="otp-code" type="text" placeholder="Enter 6-digit OTP" class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm text-center tracking-widest font-mono" />
+          <button id="verify-otp-btn" type="button" class="btn-primary w-full py-2.5 rounded-xl text-sm font-semibold">Verify & Login</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BLOCKED OR MAINTENANCE -->
+  <section id="status-block-screen" class="hidden min-h-screen flex items-center justify-center p-4">
+    <div class="surface-card max-w-md w-full rounded-2xl p-8 text-center space-y-4">
+      <div class="text-4xl">🚫</div>
+      <h2 id="block-screen-title" class="font-display text-2xl font-bold">Account Restricted</h2>
+      <p id="block-screen-msg" class="text-sm muted"></p>
+      <button id="block-logout-btn" class="btn-primary px-6 py-2.5 rounded-xl text-sm font-semibold">Sign Out</button>
+    </div>
+  </section>
+
+  <!-- PLAYER SHELL -->
+  <div id="player-shell" class="hidden min-h-screen flex">
+    <aside style="background-color: var(--nav-bg); border-color: var(--border-color);" class="hidden lg:flex sticky top-0 h-screen w-64 border-r flex-col">
+      <div class="p-5 border-b flex items-center gap-3" style="border-color: var(--border-color);">
+        <div class="w-10 h-10 rounded-xl btn-primary flex items-center justify-center font-display text-lg font-bold">BA</div>
+        <div><h2 class="font-display text-xl font-bold tracking-wide leading-none">BATTLE ARENA</h2><span class="text-[11px] font-semibold accent-text uppercase tracking-wider">Esports Hub</span></div>
+      </div>
+      <nav class="flex-1 p-3 space-y-1 text-sm overflow-y-auto">
+        <button data-tab="home" class="nav-link active w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-left"><span>🏠</span><span>Tournaments</span></button>
+        <button data-tab="mytournaments" class="nav-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-left"><span>🎮</span><span>My Matches</span></button>
+        <button data-tab="wallet" class="nav-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-left"><span>💳</span><span>Wallet</span></button>
+        <button data-tab="leaderboard" class="nav-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-left"><span>🏆</span><span>Winners & Ranks</span></button>
+        <button data-tab="notifications" class="nav-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-left"><span>🔔</span><span>Notifications</span></button>
+        <button data-tab="support" class="nav-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-left"><span>🎧</span><span>Support</span></button>
+        <button data-tab="profile" class="nav-link w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-left"><span>👤</span><span>Profile</span></button>
+      </nav>
+      <div class="p-4 border-t" style="border-color: var(--border-color);">
+        <button id="desktop-logout-btn" class="w-full py-2 rounded-xl text-xs font-semibold border border-red-500/30 text-red-500 hover:bg-red-500/10">Sign Out</button>
+      </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col min-w-0">
+      <header style="background-color: var(--bg-card); border-color: var(--border-color);" class="sticky top-0 z-20 border-b px-4 lg:px-8 py-3 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="lg:hidden w-9 h-9 rounded-xl btn-primary flex items-center justify-center font-display text-base font-bold">BA</div>
+          <div><h1 id="header-title" class="font-display text-lg lg:text-2xl font-bold leading-tight">Tournaments</h1><p id="header-ffuid" class="text-[11px] muted"></p></div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button data-goto="wallet" class="px-3 py-1.5 rounded-xl accent-bg-soft text-xs font-bold flex items-center gap-1.5"><span>💰</span><span id="header-wallet-bal">₹0</span></button>
+          <button data-tab="notifications" class="px-2.5 py-1.5 rounded-xl text-xs border lg:hidden" style="border-color: var(--border-color);">🔔</button>
+          <button data-tab="support" class="px-2.5 py-1.5 rounded-xl text-xs border lg:hidden" style="border-color: var(--border-color);">🎧</button>
+          <button id="theme-toggle-btn" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold border" style="border-color: var(--border-color);">🎨</button>
+        </div>
+      </header>
+
+      <div id="announcement-banner" class="hidden mx-4 lg:mx-8 mt-4 p-3.5 rounded-2xl accent-bg-soft border flex items-center gap-3 text-xs font-semibold" style="border-color: var(--accent);">
+        <span class="text-base">📢</span><p id="announcement-text" class="flex-1"></p>
+      </div>
+
+      <main class="flex-1 p-4 lg:p-8 max-w-6xl w-full mx-auto space-y-6">
+        <section id="tab-home" class="tab-panel space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex flex-wrap gap-2">
+              <button data-t-status="upcoming" class="t-status-btn px-4 py-2 rounded-xl text-xs font-semibold btn-primary">Upcoming</button>
+              <button data-t-status="live" class="t-status-btn px-4 py-2 rounded-xl text-xs font-semibold surface-card">🔴 Live</button>
+              <button data-t-status="completed" class="t-status-btn px-4 py-2 rounded-xl text-xs font-semibold surface-card">Completed</button>
+            </div>
+            <select id="home-mode-filter" class="input-field px-3 py-2 rounded-xl text-xs font-semibold w-full sm:w-40">
+              <option value="all">All Modes</option><option value="Solo">Solo</option><option value="Duo">Duo</option><option value="Squad">Squad</option>
+            </select>
+          </div>
+          <div id="home-tournaments-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+        </section>
+
+        <section id="tab-mytournaments" class="tab-panel hidden space-y-5">
+          <div id="my-tournaments-list" class="grid grid-cols-1 md:grid-cols-2 gap-5"></div>
+        </section>
+
+        <section id="tab-wallet" class="tab-panel hidden space-y-6">
+          <div class="surface-card rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wider muted">Available Wallet Balance</p>
+              <p id="wallet-balance-big" class="font-display text-4xl font-bold accent-text mt-1">₹0</p>
+              <p class="text-[11px] muted mt-1">Verified Ledger</p>
+            </div>
+            <div class="flex gap-3">
+              <button id="open-deposit-btn" class="btn-primary px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm">+ Deposit</button>
+              <button id="open-withdraw-btn" class="px-5 py-2.5 rounded-xl text-sm font-semibold border hover:opacity-80" style="border-color: var(--border-color);">Withdraw</button>
+            </div>
+          </div>
+          <div class="flex gap-2 border-b pb-2 overflow-x-auto" style="border-color: var(--border-color);">
+            <button data-wtab="tx" class="w-subtab px-4 py-2 rounded-xl text-xs font-semibold btn-primary">All Transactions</button>
+            <button data-wtab="deposits" class="w-subtab px-4 py-2 rounded-xl text-xs font-semibold surface-card">Deposit History</button>
+            <button data-wtab="withdrawals" class="w-subtab px-4 py-2 rounded-xl text-xs font-semibold surface-card">Withdrawal History</button>
+          </div>
+          <div id="wallet-history-list" class="space-y-3"></div>
+        </section>
+
+        <section id="tab-leaderboard" class="tab-panel hidden space-y-6">
+          <div class="surface-card rounded-2xl p-5"><h3 class="font-bold text-base mb-4">Top Prize Earners (Verified Results)</h3><div id="leaderboard-list" class="space-y-2.5"></div></div>
+          <div class="surface-card rounded-2xl p-5"><h3 class="font-bold text-base mb-4">Recent Match Winners</h3><div id="recent-winners-list" class="space-y-2.5"></div></div>
+        </section>
+
+        <section id="tab-notifications" class="tab-panel hidden space-y-4"><div id="notifications-list" class="space-y-3"></div></section>
+
+        <section id="tab-support" class="tab-panel hidden space-y-6">
+          <form id="support-form" class="surface-card rounded-2xl p-6 space-y-4">
+            <h3 class="font-bold text-base">Contact Battle Arena Support</h3>
+            <input id="sup-subject" type="text" required placeholder="Subject (e.g. Deposit UTR / Withdrawal / Room issue)" class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm" />
+            <textarea id="sup-message" rows="3" required placeholder="Describe your issue..." class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm"></textarea>
+            <button type="submit" class="btn-primary px-6 py-2.5 rounded-xl text-sm font-semibold">Submit Ticket</button>
+          </form>
+          <div id="my-support-list" class="space-y-3"></div>
+        </section>
+
+        <section id="tab-profile" class="tab-panel hidden space-y-6">
+          <div class="surface-card rounded-2xl p-6 max-w-xl space-y-5">
+            <div class="flex items-center gap-4">
+              <div class="relative">
+                <img id="profile-avatar-img" class="hidden w-16 h-16 rounded-2xl object-cover border" style="border-color: var(--border-color);" alt="Avatar" />
+                <div id="profile-avatar-fallback" class="w-16 h-16 rounded-2xl accent-bg-soft flex items-center justify-center font-display text-2xl font-bold">BA</div>
+              </div>
+              <div class="space-y-1">
+                <h3 id="profile-display-name" class="font-bold text-lg">Player</h3>
+                <label class="inline-block text-xs font-semibold accent-text cursor-pointer hover:underline">
+                  <span>Change Profile Photo</span>
+                  <input id="avatar-upload-input" type="file" accept="image/*" class="hidden" />
+                </label>
+              </div>
+            </div>
+            <form id="profile-form" class="space-y-4">
+              <div><label class="block text-xs font-semibold muted mb-1">In-Game Name / Display Name</label><input id="prof-name" type="text" required class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm" /></div>
+              <div><label class="block text-xs font-semibold muted mb-1">Free Fire UID</label><input id="prof-ffuid" type="text" required pattern="[0-9]{6,15}" class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm" /></div>
+              <div><label class="block text-xs font-semibold muted mb-1">Phone Number</label><input id="prof-phone" type="tel" class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm" /></div>
+              <div><label class="block text-xs font-semibold muted mb-1">Email</label><input id="prof-email" type="email" disabled class="input-field w-full px-3.5 py-2.5 rounded-xl text-sm opacity-70" /></div>
+              <button type="submit" class="btn-primary px-6 py-2.5 rounded-xl text-sm font-semibold">Save Profile</button>
+            </form>
+            <div class="pt-4 border-t lg:hidden" style="border-color: var(--border-color);">
+              <button id="mobile-logout-btn" class="w-full py-2.5 rounded-xl text-xs font-semibold border border-red-500/30 text-red-500">Sign Out</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <nav style="background-color: var(--nav-bg); border-color: var(--border-color);" class="lg:hidden fixed bottom-0 left-0 right-0 z-30 border-t grid grid-cols-5 py-2 text-[11px]">
+      <button data-tab="home" class="bottom-nav-link active flex flex-col items-center gap-0.5"><span class="text-lg">🏠</span><span>Play</span></button>
+      <button data-tab="mytournaments" class="bottom-nav-link flex flex-col items-center gap-0.5"><span class="text-lg">🎮</span><span>Matches</span></button>
+      <button data-tab="wallet" class="bottom-nav-link flex flex-col items-center gap-0.5"><span class="text-lg">💳</span><span>Wallet<
